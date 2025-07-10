@@ -19,8 +19,6 @@ if [ ! -f .env ]; then
     echo "   - OAUTH2_AUDIENCE (your Auth0 API identifier)"
     echo "   - AUTH0_CLIENT_ID (your Auth0 application client ID)"
     echo "   - AUTH0_CLIENT_SECRET (your Auth0 application client secret)"
-    echo "   - OPENAI_API_KEY (your OpenAI API key)"
-    echo "   - ANTHROPIC_API_KEY (your Anthropic API key)"
     echo ""
     read -p "Press Enter after you've updated .env..."
 else

@@ -214,6 +214,11 @@ class AnthropicClientWrapper:
 
     def __init__(self, api_key: str | None = None):
         """Initialize the Anthropic client"""
+        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        self.client = (
+            anthropic.AsyncAnthropic(api_key=self.api_key) if self.api_key else None
+        )
+
         anthropic_api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
 
         if not anthropic_api_key:
@@ -226,6 +231,7 @@ class AnthropicClientWrapper:
 
         self.client = anthropic.AsyncAnthropic(api_key=anthropic_api_key)
 
+
     async def create_chat_completion(
         self,
         model: str,
@@ -235,6 +241,8 @@ class AnthropicClientWrapper:
         function_call: dict[str, str] | None = None,
     ) -> ChatResponse:
         """Create a chat completion using the Anthropic API"""
+        if not self.client:
+            raise ValueError("Anthropic API key is not configured")
         try:
             # For Anthropic, we need to handle structured output differently
             if response_format and response_format.get("type") == "json_object":
@@ -299,6 +307,24 @@ class OpenAIClientWrapper:
         """Initialize the OpenAI client based on environment variables"""
 
         # Regular OpenAI setup
+
+        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        self.base_url = base_url or os.environ.get("OPENAI_API_BASE")
+
+        if self.api_key:
+            if self.base_url:
+                self.completion_client = AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=self.base_url,
+                )
+                self.embedding_client = AsyncOpenAI(
+                    api_key=self.api_key,
+                    base_url=self.base_url,
+                )
+            else:
+                self.completion_client = AsyncOpenAI(api_key=self.api_key)
+                self.embedding_client = AsyncOpenAI(api_key=self.api_key)
+
         openai_api_base = base_url or os.environ.get("OPENAI_API_BASE")
         openai_api_key = api_key or os.environ.get("OPENAI_API_KEY")
 
@@ -317,9 +343,10 @@ class OpenAIClientWrapper:
                 api_key=openai_api_key,
                 base_url=openai_api_base,
             )
+            
         else:
-            self.completion_client = AsyncOpenAI(api_key=openai_api_key)
-            self.embedding_client = AsyncOpenAI(api_key=openai_api_key)
+            self.completion_client = None
+            self.embedding_client = None
 
     async def create_chat_completion(
         self,
@@ -330,6 +357,8 @@ class OpenAIClientWrapper:
         function_call: dict[str, str] | None = None,
     ) -> ChatResponse:
         """Create a chat completion using the OpenAI API"""
+        if not self.completion_client:
+            raise ValueError("OpenAI API key is not configured")
         try:
             # Build the request parameters
             request_params = {
@@ -368,6 +397,8 @@ class OpenAIClientWrapper:
 
     async def create_embedding(self, query_vec: list[str]) -> np.ndarray:
         """Create embeddings for the given texts"""
+        if not self.embedding_client:
+            raise ValueError("OpenAI API key is not configured")
         try:
             embeddings = []
             embedding_model = "text-embedding-ada-002"
