@@ -264,6 +264,13 @@ uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
 python -m pytest tests/integration/test_warp_agents.py
 ```
 
+### Codex Setup Script
+
+A convenience script is provided to automate these steps for Codex agents.
+Run `./scripts/setup.sh` to install dependencies, copy the `.env` template,
+and set up pre-commit hooks. Keep this script up to date with any
+environment changes.
+
 ### Environment Variables
 
 ```env
