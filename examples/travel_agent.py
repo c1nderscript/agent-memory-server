@@ -39,7 +39,12 @@ from agent_memory_client.models import (
 )
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.callbacks.manager import CallbackManagerForToolRun
-from langchain_openai import ChatOpenAI
+
+
+try:  # Optional dependency
+    from langchain_openai import ChatOpenAI
+except Exception:  # pragma: no cover - dependency may not be installed
+    ChatOpenAI = None  # type: ignore[misc]
 from redis import Redis
 
 
@@ -197,6 +202,11 @@ class TravelAgent:
         logger.info(f"Total available tools: {all_tool_names}")
 
         # Set up LLM with function calling
+        if ChatOpenAI is None:
+            raise ImportError(
+                "langchain-openai is required to run this example"
+            )
+
         if available_functions:
             self.llm = ChatOpenAI(model="gpt-4o", temperature=0.7).bind_functions(
                 available_functions

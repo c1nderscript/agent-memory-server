@@ -4,10 +4,19 @@ import os
 from enum import Enum
 from typing import Any
 
-import anthropic
 import numpy as np
-from openai import AsyncOpenAI
 from pydantic import BaseModel
+
+
+try:  # Optional dependency
+    from openai import AsyncOpenAI
+except Exception:  # pragma: no cover - dependency may not be installed
+    AsyncOpenAI = None  # type: ignore[misc]
+
+try:  # Optional dependency
+    import anthropic
+except Exception:  # pragma: no cover - dependency may not be installed
+    anthropic = None  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -210,6 +219,11 @@ class AnthropicClientWrapper:
         if not anthropic_api_key:
             raise ValueError("Anthropic API key is required")
 
+        if anthropic is None:
+            raise ImportError(
+                "anthropic package is required for AnthropicClientWrapper"
+            )
+
         self.client = anthropic.AsyncAnthropic(api_key=anthropic_api_key)
 
     async def create_chat_completion(
@@ -290,6 +304,9 @@ class OpenAIClientWrapper:
 
         if not openai_api_key:
             raise ValueError("OpenAI API key is required")
+
+        if AsyncOpenAI is None:
+            raise ImportError("openai package is required for OpenAIClientWrapper")
 
         if openai_api_base:
             self.completion_client = AsyncOpenAI(
