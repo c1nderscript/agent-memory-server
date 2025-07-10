@@ -1,6 +1,6 @@
 # 🔮 Redis Agent Memory Server
 
-A Redis-powered memory server built for AI agents and applications. It manages both conversational context and long-term memories, offering semantic search, automatic summarization, and flexible APIs through both REST and MCP interfaces.
+A Redis-powered memory server built for AI agents and applications. **This fork is optimized for Warp terminal's Agent Mode.** It manages both conversational context and long-term memories, offering semantic search, automatic summarization, and flexible APIs through both REST and MCP interfaces.
 
 ## Features
 
@@ -80,6 +80,27 @@ For complete API documentation with examples, see [REST API Documentation](docs/
 Agent Memory Server offers an MCP (Model Context Protocol) server interface powered by FastMCP, providing tool-based memory management for LLMs and agents. Includes tools for working memory, long-term memory, semantic search, and memory-enriched prompts.
 
 For complete MCP setup and usage examples, see [MCP Documentation](docs/mcp.md).
+
+## Using with Warp Terminal
+
+Warp's Agent Mode can connect to the memory server via its MCP interface. Start the server in **stdio** mode and register it inside Warp's *Manage MCP servers* panel:
+
+```bash
+uv run agent-memory mcp --mode stdio
+```
+
+Example Warp configuration snippet:
+
+```json
+{
+  "name": "Redis Memory Server",
+  "command": "uv",
+  "args": ["run", "agent-memory", "mcp", "--mode", "stdio"],
+  "start_on_launch": true
+}
+```
+
+Warp Preview access is required to use MCP servers. See [MCP Guide for Warp Terminal Agents](./MCP%20Guide%20for%20Warp%20Terminal%20Agents.md) and the in-depth [Warp Agent Technical Analysis](./Warp%20Agent%20Technical%20Analysis.md) for complete setup and architecture details.
 
 ## Command Line Interface
 
