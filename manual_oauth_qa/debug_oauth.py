@@ -7,31 +7,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-AUTH0_DOMAIN = (
+OAUTH_DOMAIN = (
     os.getenv("OAUTH2_ISSUER_URL", "").replace("https://", "").replace("/", "")
 )
-AUTH0_CLIENT_ID = os.getenv("AUTH0_CLIENT_ID")
-AUTH0_CLIENT_SECRET = os.getenv("AUTH0_CLIENT_SECRET")
-AUTH0_AUDIENCE = os.getenv("OAUTH2_AUDIENCE")
+OAUTH_CLIENT_ID = os.getenv("OAUTH_CLIENT_ID")
+OAUTH_CLIENT_SECRET = os.getenv("OAUTH_CLIENT_SECRET")
+OAUTH_AUDIENCE = os.getenv("OAUTH2_AUDIENCE")
 
-print("=== Auth0 Configuration Debug ===")
-print(f"Domain: {AUTH0_DOMAIN}")
-print(f"Client ID: {AUTH0_CLIENT_ID}")
+print("=== OAuth Configuration Debug ===")
+print(f"Domain: {OAUTH_DOMAIN}")
+print(f"Client ID: {OAUTH_CLIENT_ID}")
 print(
-    f"Client Secret: {AUTH0_CLIENT_SECRET[:10]}..." if AUTH0_CLIENT_SECRET else "None"
+    f"Client Secret: {OAUTH_CLIENT_SECRET[:10]}..." if OAUTH_CLIENT_SECRET else "None"
 )
-print(f"Audience: {AUTH0_AUDIENCE}")
-print(f"Token URL: https://{AUTH0_DOMAIN}/oauth/token")
+print(f"Audience: {OAUTH_AUDIENCE}")
+print(f"Token URL: https://{OAUTH_DOMAIN}/oauth/token")
 
 print("\n=== Validation ===")
 missing = []
-if not AUTH0_DOMAIN:
+if not OAUTH_DOMAIN:
     missing.append("OAUTH2_ISSUER_URL")
-if not AUTH0_CLIENT_ID:
-    missing.append("AUTH0_CLIENT_ID")
-if not AUTH0_CLIENT_SECRET:
-    missing.append("AUTH0_CLIENT_SECRET")
-if not AUTH0_AUDIENCE:
+if not OAUTH_CLIENT_ID:
+    missing.append("OAUTH_CLIENT_ID")
+if not OAUTH_CLIENT_SECRET:
+    missing.append("OAUTH_CLIENT_SECRET")
+if not OAUTH_AUDIENCE:
     missing.append("OAUTH2_AUDIENCE")
 
 if missing:
@@ -40,12 +40,12 @@ if missing:
 else:
     print("✅ All required values present")
 
-print("\n=== Testing Auth0 Token Request ===")
-token_url = f"https://{AUTH0_DOMAIN}/oauth/token"
+print("\n=== Testing OAuth Token Request ===")
+token_url = f"https://{OAUTH_DOMAIN}/oauth/token"
 payload = {
-    "client_id": AUTH0_CLIENT_ID,
-    "client_secret": AUTH0_CLIENT_SECRET,
-    "audience": AUTH0_AUDIENCE,
+    "client_id": OAUTH_CLIENT_ID,
+    "client_secret": OAUTH_CLIENT_SECRET,
+    "audience": OAUTH_AUDIENCE,
     "grant_type": "client_credentials",
 }
 
@@ -61,9 +61,9 @@ try:
         print(f"Response: {response.text}")
 
         if response.status_code == 200:
-            print("✅ Auth0 token request successful!")
+            print("✅ OAuth token request successful!")
         else:
-            print("❌ Auth0 token request failed!")
+            print("❌ OAuth token request failed!")
 
 except Exception as e:
     print(f"❌ Exception during token request: {e}")

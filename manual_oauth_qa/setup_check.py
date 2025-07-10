@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Setup Check Script for Auth0 Manual Testing
+Setup Check Script for OAuth Manual Testing
 
 This script verifies that all dependencies and configuration
-are properly set up for Auth0 testing.
+are properly set up for OAuth testing.
 """
 
 import os
@@ -91,8 +91,8 @@ def check_env_file():
     required_vars = [
         "OAUTH2_ISSUER_URL",
         "OAUTH2_AUDIENCE",
-        "AUTH0_CLIENT_ID",
-        "AUTH0_CLIENT_SECRET",
+        "OAUTH_CLIENT_ID",
+        "OAUTH_CLIENT_SECRET",
     ]
 
     missing_vars = []
@@ -132,7 +132,7 @@ def check_memory_server():
 
 def main():
     """Run all checks"""
-    print("🔍 Redis Memory Server - Auth0 Setup Check")
+    print("🔍 Redis Memory Server - OAuth Setup Check")
     print("=" * 50)
 
     checks = [
@@ -149,9 +149,9 @@ def main():
     print(f"\n📊 Setup Check Results: {passed}/{total} passed")
 
     if passed == total:
-        print("🎉 All checks passed! Ready for Auth0 testing.")
+        print("🎉 All checks passed! Ready for OAuth testing.")
         print("\nNext steps:")
-        print("1. Run: python manual_oauth_qa/test_auth0.py")
+        print("1. Run: python manual_oauth_qa/test_oauth.py")
         return True
     print("❌ Some checks failed. Please fix the issues above.")
     return False

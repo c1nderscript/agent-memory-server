@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Manual Auth0 Testing Script for Redis Memory Server
+Manual OAuth Testing Script for Redis Memory Server
 
-This script helps you test Auth0 authentication with the Redis Memory Server.
+This script helps you test OAuth authentication with the Redis Memory Server.
 It will:
-1. Get an access token from Auth0
+1. Get an access token from your provider
 2. Test various API endpoints with the token
 3. Verify authentication is working correctly
 
 Prerequisites:
-1. Auth0 application configured (Machine to Machine)
-2. .env file with Auth0 configuration
+1. OAuth application configured (Machine to Machine)
+2. .env file with OAuth configuration
 3. Redis server running
 4. Memory server running with authentication enabled
 """
@@ -31,51 +31,51 @@ load_dotenv()
 # Configure logging
 logger = structlog.get_logger()
 
-# Auth0 Configuration
-AUTH0_DOMAIN = (
+# OAuth Configuration
+OAUTH_DOMAIN = (
     os.getenv("OAUTH2_ISSUER_URL", "").replace("https://", "").replace("/", "")
 )
-AUTH0_CLIENT_ID = os.getenv("AUTH0_CLIENT_ID")
-AUTH0_CLIENT_SECRET = os.getenv("AUTH0_CLIENT_SECRET")
-AUTH0_AUDIENCE = os.getenv("OAUTH2_AUDIENCE")
+OAUTH_CLIENT_ID = os.getenv("OAUTH_CLIENT_ID")
+OAUTH_CLIENT_SECRET = os.getenv("OAUTH_CLIENT_SECRET")
+OAUTH_AUDIENCE = os.getenv("OAUTH2_AUDIENCE")
 
 # Memory Server Configuration
 MEMORY_SERVER_URL = f"http://localhost:{os.getenv('PORT', '8000')}"
 
 
-class Auth0Tester:
+class OAuthTester:
     def __init__(self):
         self.access_token = None
         self.client = httpx.Client(timeout=30.0)
 
-    def get_auth0_token(self) -> str:
-        """Get an access token from Auth0"""
+    def get_oauth_token(self) -> str:
+        """Get an access token from the provider"""
         if not all(
-            [AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_AUDIENCE]
+            [OAUTH_DOMAIN, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_AUDIENCE]
         ):
             raise ValueError(
-                "Missing Auth0 configuration. Please set:\n"
-                "- OAUTH2_ISSUER_URL (e.g., https://your-domain.auth0.com/)\n"
-                "- AUTH0_CLIENT_ID\n"
-                "- AUTH0_CLIENT_SECRET\n"
+                "Missing OAuth configuration. Please set:\n"
+                "- OAUTH2_ISSUER_URL\n"
+                "- OAUTH_CLIENT_ID\n"
+                "- OAUTH_CLIENT_SECRET\n"
                 "- OAUTH2_AUDIENCE"
             )
 
-        token_url = f"https://{AUTH0_DOMAIN}/oauth/token"
+        token_url = f"https://{OAUTH_DOMAIN}/oauth/token"
 
         payload = {
-            "client_id": AUTH0_CLIENT_ID,
-            "client_secret": AUTH0_CLIENT_SECRET,
-            "audience": AUTH0_AUDIENCE,
+            "client_id": OAUTH_CLIENT_ID,
+            "client_secret": OAUTH_CLIENT_SECRET,
+            "audience": OAUTH_AUDIENCE,
             "grant_type": "client_credentials",
         }
 
         headers = {"Content-Type": "application/json"}
 
         logger.info(
-            "Requesting Auth0 access token",
-            domain=AUTH0_DOMAIN,
-            audience=AUTH0_AUDIENCE,
+            "Requesting OAuth access token",
+            domain=OAUTH_DOMAIN,
+            audience=OAUTH_AUDIENCE,
         )
 
         try:
@@ -86,7 +86,7 @@ class Auth0Tester:
             self.access_token = token_data["access_token"]
 
             logger.info(
-                "Successfully obtained Auth0 token",
+                "Successfully obtained OAuth token",
                 token_type=token_data.get("token_type"),
                 expires_in=token_data.get("expires_in"),
             )
@@ -94,9 +94,9 @@ class Auth0Tester:
             return self.access_token
 
         except httpx.HTTPError as e:
-            logger.error("Failed to get Auth0 token", error=str(e))
+            logger.error("Failed to get OAuth token", error=str(e))
             if hasattr(e, "response") and e.response:
-                logger.error("Auth0 error response", response=e.response.text)
+                logger.error("OAuth error response", response=e.response.text)
             raise
 
     def test_endpoint(
@@ -152,13 +152,13 @@ class Auth0Tester:
 
     def run_comprehensive_test(self):
         """Run a comprehensive test of all endpoints"""
-        logger.info("🚀 Starting comprehensive Auth0 authentication test")
+        logger.info("🚀 Starting comprehensive OAuth authentication test")
 
-        # Step 1: Get Auth0 token
+        # Step 1: Get OAuth token
         try:
-            self.get_auth0_token()
+            self.get_oauth_token()
         except Exception as e:
-            logger.error("Failed to get Auth0 token, aborting tests", error=str(e))
+            logger.error("Failed to get OAuth token, aborting tests", error=str(e))
             return False
 
         # Step 2: Test health endpoint (should work without auth)
@@ -178,8 +178,8 @@ class Auth0Tester:
                 {
                     "query": "What is the capital of France?",
                     "session": {
-                        "session_id": "test-session-auth0",
-                        "namespace": "test-auth0",
+                        "session_id": "test-session-oauth",
+                        "namespace": "test-oauth",
                         "window_size": 10,
                     },
                 },
@@ -190,15 +190,15 @@ class Auth0Tester:
                 {
                     "memories": [
                         {
-                            "id": "auth0-test-memory-1",
-                            "text": "Auth0 test memory",
-                            "session_id": "test-session-auth0",
-                            "namespace": "test-auth0",
+                            "id": "oauth-test-memory-1",
+                            "text": "OAuth test memory",
+                            "session_id": "test-session-oauth",
+                            "namespace": "test-oauth",
                         }
                     ]
                 },
             ),
-            ("POST", "/long-term-memory/search", {"text": "Auth0 test", "limit": 5}),
+            ("POST", "/long-term-memory/search", {"text": "OAuth test", "limit": 5}),
         ]
 
         results = []
@@ -260,21 +260,21 @@ class Auth0Tester:
         )
 
         if overall_success:
-            logger.info("🎉 All Auth0 authentication tests passed!")
+            logger.info("🎉 All OAuth authentication tests passed!")
         else:
-            logger.error("❌ Some Auth0 authentication tests failed")
+            logger.error("❌ Some OAuth authentication tests failed")
 
         return overall_success
 
 
 def main():
-    """Main function to run Auth0 tests"""
-    print("🔮 Redis Memory Server - Auth0 Manual Testing")
+    """Main function to run OAuth tests"""
+    print("🔮 Redis Memory Server - OAuth Manual Testing")
     print("=" * 50)
 
     # Check if memory server is running
     try:
-        response = httpx.get(f"{MEMORY_SERVER_URL}/v1/health", timeout=5.0)
+        response = httpx.get(f"{MEMORY_SERVER_URL}/health", timeout=5.0)
         if response.status_code != 200:
             print(f"❌ Memory server not responding correctly at {MEMORY_SERVER_URL}")
             print("Please start the memory server first:")
@@ -290,7 +290,7 @@ def main():
     print(f"✅ Memory server is running at {MEMORY_SERVER_URL}")
 
     # Run tests
-    tester = Auth0Tester()
+    tester = OAuthTester()
     success = tester.run_comprehensive_test()
 
     sys.exit(0 if success else 1)
