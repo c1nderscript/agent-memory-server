@@ -102,6 +102,25 @@ Example Warp configuration snippet:
 
 Warp Preview access is required to use MCP servers. See [MCP Guide for Warp Terminal Agents](./MCP%20Guide%20for%20Warp%20Terminal%20Agents.md) and the in-depth [Warp Agent Technical Analysis](./Warp%20Agent%20Technical%20Analysis.md) for complete setup and architecture details.
 
+### Dormant MCP Server (Node.js)
+
+A minimal Node-based MCP server is available under `src/server`. It starts in a dormant state and activates when it receives `SIGUSR1` or any connection on port `9100`. The server shuts down after 5 minutes of inactivity and logs CPU and memory usage every 10 seconds.
+
+To build and start the server:
+
+```bash
+npm install
+npm run build
+node dist/server/index.js
+```
+
+For development mode, run:
+
+```bash
+npx ts-node src/server/index.ts
+```
+
+
 ## Command Line Interface
 
 The `agent-memory-server` provides a comprehensive CLI for managing servers and tasks. Key commands include starting API/MCP servers, scheduling background tasks, running workers, and managing migrations.
