@@ -4,10 +4,19 @@ import os
 from enum import Enum
 from typing import Any
 
-import anthropic
 import numpy as np
-from openai import AsyncOpenAI
 from pydantic import BaseModel
+
+
+try:  # Optional dependency
+    from openai import AsyncOpenAI
+except Exception:  # pragma: no cover - dependency may not be installed
+    AsyncOpenAI = None  # type: ignore[misc]
+
+try:  # Optional dependency
+    import anthropic
+except Exception:  # pragma: no cover - dependency may not be installed
+    anthropic = None  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -210,6 +219,19 @@ class AnthropicClientWrapper:
             anthropic.AsyncAnthropic(api_key=self.api_key) if self.api_key else None
         )
 
+        anthropic_api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+
+        if not anthropic_api_key:
+            raise ValueError("Anthropic API key is required")
+
+        if anthropic is None:
+            raise ImportError(
+                "anthropic package is required for AnthropicClientWrapper"
+            )
+
+        self.client = anthropic.AsyncAnthropic(api_key=anthropic_api_key)
+
+
     async def create_chat_completion(
         self,
         model: str,
@@ -285,6 +307,7 @@ class OpenAIClientWrapper:
         """Initialize the OpenAI client based on environment variables"""
 
         # Regular OpenAI setup
+
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self.base_url = base_url or os.environ.get("OPENAI_API_BASE")
 
@@ -301,6 +324,26 @@ class OpenAIClientWrapper:
             else:
                 self.completion_client = AsyncOpenAI(api_key=self.api_key)
                 self.embedding_client = AsyncOpenAI(api_key=self.api_key)
+
+        openai_api_base = base_url or os.environ.get("OPENAI_API_BASE")
+        openai_api_key = api_key or os.environ.get("OPENAI_API_KEY")
+
+        if not openai_api_key:
+            raise ValueError("OpenAI API key is required")
+
+        if AsyncOpenAI is None:
+            raise ImportError("openai package is required for OpenAIClientWrapper")
+
+        if openai_api_base:
+            self.completion_client = AsyncOpenAI(
+                api_key=openai_api_key,
+                base_url=openai_api_base,
+            )
+            self.embedding_client = AsyncOpenAI(
+                api_key=openai_api_key,
+                base_url=openai_api_base,
+            )
+            
         else:
             self.completion_client = None
             self.embedding_client = None
