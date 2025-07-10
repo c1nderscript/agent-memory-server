@@ -20,6 +20,12 @@ This directory contains comprehensive documentation for the Redis Agent Memory S
 
 - **[Development](development.md)** - Testing, contributing, and development setup
 
+### Warp Terminal Guides
+
+- **[Warp Integration Overview](warp/warp-integration.md)** - Agent Mode usage and best practices
+- **[MCP Guide for Warp Terminal Agents](warp/MCP Guide for Warp Terminal Agents.md)** - Full protocol implementation details
+- **[Warp Agent Technical Analysis](warp/Warp Agent Technical Analysis.md)** - Deep dive into Agent Mode architecture
+
 ### Additional Resources
 
 - **[Manual OAuth Testing](../manual_oauth_qa/README.md)** - Comprehensive Auth0 testing guide
@@ -31,3 +37,4 @@ This directory contains comprehensive documentation for the Redis Agent Memory S
 - **API Reference**: [REST API](api.md)
 - **Authentication Setup**: [Authentication](authentication.md)
 - **MCP Integration**: [MCP Server](mcp.md)
+- **Warp Agent Mode**: [Warp Integration Overview](warp/warp-integration.md)

@@ -54,7 +54,8 @@ redis-agent-memory-server/
 │       ├── integration/
 │       └── warp_agents/      # Warp agent-specific tests
 ├── docs/
-│   ├── warp-integration.md   # Warp terminal integration guide
+│   ├── warp/
+│   │   └── warp-integration.md   # Warp terminal integration guide
 │   ├── api.md               # API documentation
 │   └── deployment.md        # Deployment guide
 ├── scripts/
