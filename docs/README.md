@@ -9,6 +9,7 @@ This directory contains comprehensive documentation for the Redis Agent Memory S
 - **[Authentication](authentication.md)** - OAuth2/JWT setup, configuration, and security best practices
 - **[REST API](api.md)** - Complete API reference with endpoints and examples
 - **[MCP Server](mcp.md)** - Model Context Protocol interface and client setup
+- **[MCP Guide for Warp Terminal Agents](../MCP%20Guide%20for%20Warp%20Terminal%20Agents.md)** - Warp-specific instructions
 - **[CLI](cli.md)** - Command-line interface reference and examples
 
 ### Setup and Configuration
