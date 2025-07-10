@@ -17,9 +17,7 @@ AUTH0_CLIENT_SECRET=your-auth0-client-secret
 # Optional: Explicit JWKS URL (auto-derived from issuer if not set)
 # OAUTH2_JWKS_URL=https://your-domain.auth0.com/.well-known/jwks.json
 
-# AI Service API Keys
-OPENAI_API_KEY=your-openai-api-key-here
-ANTHROPIC_API_KEY=your-anthropic-api-key-here
+# AI Service API Keys (optional)
 
 # Model Configuration
 GENERATION_MODEL=gpt-4o-mini

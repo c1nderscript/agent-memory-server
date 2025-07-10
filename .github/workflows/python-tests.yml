@@ -67,8 +67,6 @@ jobs:
     - name: Run tests
       run: |
         uv run pytest --run-api-tests
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   docker:
     needs: test

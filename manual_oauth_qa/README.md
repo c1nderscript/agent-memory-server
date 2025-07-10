@@ -65,9 +65,7 @@ OAUTH2_ALGORITHMS=["RS256"]
 AUTH0_CLIENT_ID=your-client-id
 AUTH0_CLIENT_SECRET=your-client-secret
 
-# Your API Keys
-OPENAI_API_KEY=your-actual-openai-key
-ANTHROPIC_API_KEY=your-actual-anthropic-key
+# Your API Keys (optional)
 ```
 
 ### Step 3: Start Services
