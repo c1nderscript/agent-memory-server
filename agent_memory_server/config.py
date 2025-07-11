@@ -81,6 +81,7 @@ class Settings(BaseSettings):
     # If using BERTopic, use a supported model, such as
     # "MaartenGr/BERTopic_Wikipedia"
     topic_model: str = "gpt-4o-mini"
+    topic_model_path: str = "MaartenGr/BERTopic_Wikipedia"
     enable_topic_extraction: bool = True
     top_k_topics: int = 3
 
