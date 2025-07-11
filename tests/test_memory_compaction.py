@@ -4,12 +4,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from agent_memory_server.logging import get_logger
 from agent_memory_server.long_term_memory import (
     count_long_term_memories,
     generate_memory_hash,
     merge_memories_with_llm,
 )
 from agent_memory_server.models import MemoryRecord
+
+
+logger = get_logger(__name__)
 
 
 def test_generate_memory_hash():
@@ -196,11 +200,11 @@ async def test_hash_deduplication_integration(
 
     # Debug: Check what keys exist in Redis
     keys = await async_redis_client.keys("*")
-    print(f"🔍 Redis keys after indexing: {keys}")
+    logger.debug("Redis keys after indexing", keys=keys)
 
     # Debug: Check if we can find our specific namespace
     namespace_keys = [k for k in keys if b"hash_dedup_test_namespace" in k]
-    print(f"🔍 Keys with our namespace: {namespace_keys}")
+    logger.debug("Keys with our namespace", namespace_keys=namespace_keys)
 
     # Count memories in our specific namespace to avoid counting other test data
     remaining_before = await count_long_term_memories(

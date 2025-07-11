@@ -39,6 +39,11 @@ from agent_memory_client.models import (
 )
 from ulid import ULID
 
+from agent_memory_server.logging import get_logger
+
+
+logger = get_logger(__name__)
+
 
 # Test configuration
 INTEGRATION_BASE_URL = os.getenv("MEMORY_SERVER_BASE_URL", "http://localhost:8001")
@@ -693,7 +698,7 @@ class TestMemoryPromptHydration:
 
         # Setup long-term memories
         created_result = await client.create_long_term_memory(test_memories)
-        print(f"Created memories result: {created_result}")
+        logger.debug("Created memories", result=created_result)
         await asyncio.sleep(10)  # Significantly increased sleep time for indexing
 
         # Debug: Search without any filters to see if memories exist at all
@@ -701,7 +706,7 @@ class TestMemoryPromptHydration:
             text="interface preferences dark mode",
             limit=100,
         )
-        print(f"Search without filters: {search_no_filters}")
+        logger.debug("Search without filters", result=search_no_filters)
 
         # Debug: Search with namespace only
         search_namespace_only = await client.search_long_term_memory(
@@ -709,7 +714,7 @@ class TestMemoryPromptHydration:
             namespace=Namespace(eq=unique_test_namespace),
             limit=10,
         )
-        print(f"Search with namespace only: {search_namespace_only}")
+        logger.debug("Search with namespace only", result=search_namespace_only)
 
         # Debug: Search with topics only
         search_topics_only = await client.search_long_term_memory(
@@ -717,7 +722,7 @@ class TestMemoryPromptHydration:
             topics=Topics(any=["preferences", "ui"]),
             limit=10,
         )
-        print(f"Search with topics only: {search_topics_only}")
+        logger.debug("Search with topics only", result=search_topics_only)
 
         # Debug: Search directly to see if memories are findable
         search_result = await client.search_long_term_memory(
@@ -726,7 +731,7 @@ class TestMemoryPromptHydration:
             topics=Topics(any=["preferences", "ui"]),
             limit=3,
         )
-        print(f"Direct search result: {search_result}")
+        logger.debug("Direct search result", result=search_result)
 
         # Test hydration with long-term search
         prompt_result = await client.memory_prompt(
@@ -744,8 +749,10 @@ class TestMemoryPromptHydration:
         # Look for injected memory context
         context_found = any("dark mode" in str(msg).lower() for msg in messages)
         if not context_found:
-            print(f"Messages received: {messages}")
-            print(f"No 'dark mode' context found in {len(messages)} messages")
+            logger.debug("Messages received", messages=messages)
+            logger.debug(
+                "No 'dark mode' context found in messages", count=len(messages)
+            )
             # Try a broader search to see if any interface/preference content exists
             broader_context = any(
                 any(
@@ -754,8 +761,9 @@ class TestMemoryPromptHydration:
                 )
                 for msg in messages
             )
-            print(
-                f"Broader context (interface/preference/ui/blue/color) found: {broader_context}"
+            logger.debug(
+                "Broader context found",
+                found=broader_context,
             )
 
         # Make the assertion more lenient - look for any relevant context
@@ -773,9 +781,9 @@ class TestMemoryPromptHydration:
             )
             for msg in messages
         )
-        assert (
-            relevant_context_found
-        ), f"No relevant memory context found in messages: {messages}"
+        assert relevant_context_found, (
+            f"No relevant memory context found in messages: {messages}"
+        )
 
         # Cleanup
         await client.delete_long_term_memories([m.id for m in test_memories])
@@ -1040,7 +1048,7 @@ class TestComprehensiveIntegration:
                 "limit": 3,
             },
         )
-        print(prompt_result)
+        logger.debug("Prompt result", result=prompt_result)
 
         assert "messages" in prompt_result
         assert len(prompt_result["messages"]) > 0
@@ -1063,25 +1071,25 @@ class TestComprehensiveIntegration:
             max_results=5,
         )
 
-        print(f"Search results: {search_results}")
+        logger.debug("Search results", results=search_results)
         if len(search_results["memories"]) == 0:
             # Try a broader search to debug
             broader_search = await client.search_memory_tool(
                 query="FastAPI python web development",
                 max_results=10,
             )
-            print(f"Broader search results: {broader_search}")
+            logger.debug("Broader search results", results=broader_search)
 
             # Try searching without topic filter
             no_topic_search = await client.search_memory_tool(
                 query="API development preferences and frameworks",
                 max_results=10,
             )
-            print(f"No topic filter search results: {no_topic_search}")
+            logger.debug("No topic filter search results", results=no_topic_search)
 
-        assert (
-            len(search_results["memories"]) > 0
-        ), f"No memories found in search results: {search_results}"
+        assert len(search_results["memories"]) > 0, (
+            f"No memories found in search results: {search_results}"
+        )
 
         # 6. Test tool integration with a realistic scenario
         tool_call = {
@@ -1126,9 +1134,9 @@ class TestComprehensiveIntegration:
             m for m in long_term_memories.memories if m.id.startswith(memory_id_prefix)
         ]
 
-        assert (
-            len(our_memories) == 0
-        ), f"Expected 0 of our memories but found {len(our_memories)}: {our_memories}"
+        assert len(our_memories) == 0, (
+            f"Expected 0 of our memories but found {len(our_memories)}: {our_memories}"
+        )
 
 
 @pytest.mark.integration

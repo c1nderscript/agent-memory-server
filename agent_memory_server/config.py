@@ -5,8 +5,12 @@ import yaml
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
+from agent_memory_server.logging import get_logger
+
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 
 # Model configuration mapping
@@ -160,9 +164,13 @@ def get_config():
 
                     config_data = json.load(f) or {}
         except FileNotFoundError:
-            print(f"Warning: Config file {config_file} not found")
-        except Exception as e:
-            print(f"Warning: Error loading config file {config_file}: {e}")
+            logger.warning("Config file not found", config_file=config_file)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "Error loading config file",
+                config_file=config_file,
+                error=str(e),
+            )
 
     # Environment variables override file config
     for key, value in os.environ.items():
