@@ -32,6 +32,9 @@ _topic_model: "BERTopic | None" = None
 _ner_model: Any | None = None
 _ner_tokenizer: Any | None = None
 
+# Cache for BERTopic topic extraction results
+_bertopic_cache: dict[tuple[str, int], list[str]] = {}
+
 
 def get_topic_model() -> "BERTopic":
     """
@@ -152,33 +155,32 @@ def extract_topics_bertopic(text: str, num_topics: int | None = None) -> list[st
     """
     Extract topics from text using the BERTopic model.
 
-    TODO: Cache this output.
-
     Args:
         text: The text to extract topics from
+        num_topics: Number of topics to return. Defaults to settings.top_k_topics
 
     Returns:
         List of topic labels
     """
-    # Get model instance
-    model = get_topic_model()
-
     _num_topics = num_topics if num_topics is not None else settings.top_k_topics
+    cache_key = (text, _num_topics)
+    if cache_key in _bertopic_cache:
+        return _bertopic_cache[cache_key]
 
-    # Get topic indices and probabilities
+    model = get_topic_model()
     topic_indices, _ = model.transform([text])
+    topics: list[str] = []
 
-    topics = []
     for i, topic_idx in enumerate(topic_indices):
         if _num_topics and i >= _num_topics:
             break
-        # Convert possible numpy integer to Python int
         topic_idx_int = int(topic_idx)
         if topic_idx_int != -1:  # Skip outlier topic (-1)
             topic_info: list[tuple[str, float]] = model.get_topic(topic_idx_int)  # type: ignore
             if topic_info:
                 topics.extend([info[0] for info in topic_info])
 
+    _bertopic_cache[cache_key] = topics
     return topics
 
 
