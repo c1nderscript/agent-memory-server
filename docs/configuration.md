@@ -7,6 +7,14 @@ The names of the settings map directly to an environment variable, so for
 example, you can set the `openai_api_key` setting with the `OPENAI_API_KEY`
 environment variable.
 
+### Topic Modeling
+
+If you enable BERTopic based extraction (`topic_model_source="BERTopic"`),
+the server loads the model specified by `topic_model_path`. Set the
+`TOPIC_MODEL_PATH` environment variable to point to your BERTopic model
+directory or HuggingFace repository. By default it uses
+`MaartenGr/BERTopic_Wikipedia`.
+
 ## Running the Background Task Worker
 
 The Redis Memory Server uses Docket for background task management. You can run a worker instance like this:

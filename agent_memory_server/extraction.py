@@ -51,9 +51,8 @@ def get_topic_model() -> "BERTopic":
 
     global _topic_model
     if _topic_model is None:
-        # TODO: Expose this as a config option
         _topic_model = BERTopic.load(
-            settings.topic_model, embedding_model="all-MiniLM-L6-v2"
+            settings.topic_model_path, embedding_model="all-MiniLM-L6-v2"
         )
     return _topic_model  # type: ignore
 

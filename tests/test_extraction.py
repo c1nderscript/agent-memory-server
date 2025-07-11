@@ -594,7 +594,7 @@ class TestTopicExtractionIntegration:
         settings.enable_topic_extraction = True
         settings.enable_ner = True
         settings.topic_model_source = "BERTopic"
-        settings.topic_model = "MaartenGr/BERTopic_Wikipedia"
+        settings.topic_model_path = "MaartenGr/BERTopic_Wikipedia"
 
         sample_text = (
             "OpenAI and Google are leading companies in artificial intelligence."
