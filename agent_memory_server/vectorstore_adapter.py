@@ -17,6 +17,7 @@ from langchain_redis.vectorstores import RedisVectorStore
 
 from agent_memory_server.filters import (
     CreatedAt,
+    DateTimeFilter,
     DiscreteMemoryExtracted,
     Entities,
     EventDate,
@@ -26,6 +27,7 @@ from agent_memory_server.filters import (
     MemoryType,
     Namespace,
     SessionId,
+    TagFilter,
     Topics,
     UserId,
 )
@@ -40,6 +42,9 @@ logger = logging.getLogger(__name__)
 
 # Type variable for VectorStore implementations
 VectorStoreType = TypeVar("VectorStoreType", bound=VectorStore)
+
+# Supported filter types for conversion helpers
+FilterType = TagFilter | DateTimeFilter
 
 
 class MemoryRedisVectorStore(RedisVectorStore):
@@ -113,41 +118,21 @@ class LangChainFilterProcessor:
         return dt.isoformat()
 
     def convert_filters_to_backend_format(
-        self,
-        session_id: SessionId | None = None,
-        user_id: UserId | None = None,
-        namespace: Namespace | None = None,
-        topics: Topics | None = None,
-        entities: Entities | None = None,
-        memory_type: MemoryType | None = None,
-        created_at: CreatedAt | None = None,
-        last_accessed: LastAccessed | None = None,
-        event_date: EventDate | None = None,
-        memory_hash: MemoryHash | None = None,
-        id: Id | None = None,
-        discrete_memory_extracted: DiscreteMemoryExtracted | None = None,
+        self, *filters: FilterType | None
     ) -> dict[str, Any] | None:
         """Convert filter objects to backend format for LangChain vectorstores."""
+
         filter_dict: dict[str, Any] = {}
 
-        # TODO: Seems like we could take *args filters and decide what to do based on type.
-        # Apply tag/string filters using the helper function
-        self.process_tag_filter(session_id, "session_id", filter_dict)
-        self.process_tag_filter(user_id, "user_id", filter_dict)
-        self.process_tag_filter(namespace, "namespace", filter_dict)
-        self.process_tag_filter(memory_type, "memory_type", filter_dict)
-        self.process_tag_filter(topics, "topics", filter_dict)
-        self.process_tag_filter(entities, "entities", filter_dict)
-        self.process_tag_filter(memory_hash, "memory_hash", filter_dict)
-        self.process_tag_filter(id, "id_", filter_dict)
-        self.process_tag_filter(
-            discrete_memory_extracted, "discrete_memory_extracted", filter_dict
-        )
-
-        # Apply datetime filters using the helper function (uses instance method for backend-specific formatting)
-        self.process_datetime_filter(created_at, "created_at", filter_dict)
-        self.process_datetime_filter(last_accessed, "last_accessed", filter_dict)
-        self.process_datetime_filter(event_date, "event_date", filter_dict)
+        for flt in filters:
+            if flt is None:
+                continue
+            if isinstance(flt, TagFilter):
+                self.process_tag_filter(flt, flt.field, filter_dict)
+            elif isinstance(flt, DateTimeFilter):
+                self.process_datetime_filter(flt, flt.field, filter_dict)
+            else:
+                raise TypeError(f"Unsupported filter type: {type(flt)}")
 
         return filter_dict if filter_dict else None
 
@@ -384,19 +369,7 @@ class VectorStoreAdapter(ABC):
         return hashlib.sha256(hash_content.encode()).hexdigest()
 
     def _convert_filters_to_backend_format(
-        self,
-        session_id: SessionId | None = None,
-        user_id: UserId | None = None,
-        namespace: Namespace | None = None,
-        topics: Topics | None = None,
-        entities: Entities | None = None,
-        memory_type: MemoryType | None = None,
-        created_at: CreatedAt | None = None,
-        last_accessed: LastAccessed | None = None,
-        event_date: EventDate | None = None,
-        memory_hash: MemoryHash | None = None,
-        id: Id | None = None,
-        discrete_memory_extracted: DiscreteMemoryExtracted | None = None,
+        self, *filters: FilterType | None
     ) -> dict[str, Any] | None:
         """Convert filter objects to standard LangChain dictionary format.
 
@@ -414,20 +387,7 @@ class VectorStoreAdapter(ABC):
             Dictionary filter in format: {"field": {"$eq": "value"}} or None
         """
         processor = LangChainFilterProcessor(self.vectorstore)
-        # TODO: Seems like we could take *args and pass them to the processor
-        filter_dict = processor.convert_filters_to_backend_format(
-            session_id=session_id,
-            user_id=user_id,
-            namespace=namespace,
-            topics=topics,
-            entities=entities,
-            memory_type=memory_type,
-            created_at=created_at,
-            last_accessed=last_accessed,
-            event_date=event_date,
-            memory_hash=memory_hash,
-            id=id,
-        )
+        filter_dict = processor.convert_filters_to_backend_format(*filters)
 
         logger.debug(f"Converted to LangChain filter format: {filter_dict}")
         return filter_dict
@@ -505,18 +465,18 @@ class LangChainVectorStoreAdapter(VectorStoreAdapter):
         try:
             # Convert filters to LangChain format
             filter_dict = self._convert_filters_to_backend_format(
-                session_id=session_id,
-                user_id=user_id,
-                namespace=namespace,
-                topics=topics,
-                entities=entities,
-                memory_type=memory_type,
-                created_at=created_at,
-                last_accessed=last_accessed,
-                event_date=event_date,
-                memory_hash=memory_hash,
-                id=id,
-                discrete_memory_extracted=discrete_memory_extracted,
+                session_id,
+                user_id,
+                namespace,
+                topics,
+                entities,
+                memory_type,
+                created_at,
+                last_accessed,
+                event_date,
+                memory_hash,
+                id,
+                discrete_memory_extracted,
             )
 
             # Use LangChain's similarity search with filters
@@ -608,9 +568,9 @@ class LangChainVectorStoreAdapter(VectorStoreAdapter):
 
             # Apply filters using the proper method signature
             backend_filter = self._convert_filters_to_backend_format(
-                namespace=namespace_filter,
-                user_id=user_id_filter,
-                session_id=session_id_filter,
+                namespace_filter,
+                user_id_filter,
+                session_id_filter,
             )
             if backend_filter:
                 search_kwargs["filter"] = backend_filter
