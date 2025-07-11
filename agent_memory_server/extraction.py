@@ -9,7 +9,7 @@ from tenacity.stop import stop_after_attempt
 from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
 
 from agent_memory_server.config import settings
-from agent_memory_server.filters import DiscreteMemoryExtracted
+from agent_memory_server.filters import DiscreteMemoryExtracted, MemoryType
 from agent_memory_server.llms import (
     AnthropicClientWrapper,
     OpenAIClientWrapper,
@@ -293,7 +293,6 @@ async def extract_discrete_memories(
 
     # Use vectorstore adapter to find messages that need discrete memory extraction
     # TODO: Sort out circular imports
-    from agent_memory_server.filters import MemoryType
     from agent_memory_server.long_term_memory import index_long_term_memories
     from agent_memory_server.vectorstore_factory import get_vectorstore_adapter
 
