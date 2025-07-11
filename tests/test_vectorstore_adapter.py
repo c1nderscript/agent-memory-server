@@ -1,11 +1,13 @@
 """Tests for the VectorStore adapter functionality."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from agent_memory_server.models import MemoryRecord, MemoryTypeEnum
 from agent_memory_server.vectorstore_adapter import (
+    LangChainFilterProcessor,
     LangChainVectorStoreAdapter,
     RedisVectorStoreAdapter,
     VectorStoreAdapter,
@@ -419,6 +421,53 @@ class TestVectorStoreAdapter:
         # Verify results
         assert len(results.memories) == 1
         assert results.memories[0].discrete_memory_extracted == "t"
+
+    def test_processor_mixed_filters(self):
+        """Verify processor handles tag and datetime filters together."""
+        from agent_memory_server.filters import CreatedAt, SessionId
+
+        vectorstore = MagicMock()
+        processor = LangChainFilterProcessor(vectorstore)
+
+        dt = datetime(2024, 1, 1, tzinfo=UTC)
+        result = processor.convert_filters_to_backend_format(
+            SessionId(eq="abc"), CreatedAt(gt=dt)
+        )
+
+        assert result == {
+            "session_id": {"$eq": "abc"},
+            "created_at": {"$gt": dt.isoformat()},
+        }
+
+    @pytest.mark.asyncio
+    async def test_search_memories_mixed_filters(self):
+        """Ensure adapter forwards combined filter dict to vectorstore."""
+        from agent_memory_server.filters import CreatedAt, SessionId
+
+        mock_vectorstore = MagicMock()
+        mock_vectorstore.asimilarity_search_with_relevance_scores = AsyncMock(
+            return_value=[]
+        )
+        adapter = LangChainVectorStoreAdapter(mock_vectorstore, MagicMock())
+
+        dt = datetime(2024, 1, 1, tzinfo=UTC)
+
+        await adapter.search_memories(
+            query="q",
+            session_id=SessionId(eq="abc"),
+            created_at=CreatedAt(gt=dt),
+        )
+
+        mock_vectorstore.asimilarity_search_with_relevance_scores.assert_called_once()
+        called_filter = (
+            mock_vectorstore.asimilarity_search_with_relevance_scores.call_args.kwargs[
+                "filter"
+            ]
+        )
+        assert called_filter == {
+            "session_id": {"$eq": "abc"},
+            "created_at": {"$gt": dt.isoformat()},
+        }
 
     @pytest.mark.asyncio
     async def test_update_then_search_integration(self):
