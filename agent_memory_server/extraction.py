@@ -14,6 +14,7 @@ from agent_memory_server.llms import (
     AnthropicClientWrapper,
     OpenAIClientWrapper,
     get_model_client,
+    get_model_config,
 )
 from agent_memory_server.logging import get_logger
 from agent_memory_server.models import MemoryRecord
@@ -126,7 +127,11 @@ async def extract_topics_llm(
     """
     Extract topics from text using the LLM model.
     """
-    _client = client or await get_model_client(settings.topic_model)
+    if client:
+        _client = client
+    else:
+        provider = get_model_config(settings.topic_model).provider
+        _client = await get_model_client(provider)
     _num_topics = num_topics if num_topics is not None else settings.top_k_topics
 
     prompt = f"""
@@ -281,7 +286,8 @@ async def extract_discrete_memories(
     """
     Extract episodic and semantic memories from text using an LLM.
     """
-    client = await get_model_client(settings.generation_model)
+    provider = get_model_config(settings.generation_model).provider
+    client = await get_model_client(provider)
 
     # Use vectorstore adapter to find messages that need discrete memory extraction
     # TODO: Sort out circular imports

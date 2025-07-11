@@ -134,7 +134,8 @@ async def summarize_session(
     """
     print("Summarizing session")
     redis = await get_redis_conn()
-    client = await get_model_client(settings.generation_model)
+    provider = get_model_config(settings.generation_model).provider
+    client = await get_model_client(provider)
 
     messages_key = Keys.messages_key(session_id)
     metadata_key = Keys.metadata_key(session_id)
