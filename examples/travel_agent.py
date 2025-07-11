@@ -26,7 +26,6 @@ Environment variables:
 
 import asyncio
 import json
-import logging
 import os
 import textwrap
 
@@ -40,6 +39,8 @@ from agent_memory_client.models import (
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.callbacks.manager import CallbackManagerForToolRun
 
+from agent_memory_server.logging import configure_logging, get_logger
+
 
 try:  # Optional dependency
     from langchain_openai import ChatOpenAI
@@ -49,8 +50,8 @@ from redis import Redis
 
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+configure_logging()
+logger = get_logger(__name__)
 
 # Environment setup
 MEMORY_SERVER_URL = os.getenv("MEMORY_SERVER_URL", "http://localhost:8000")
@@ -203,9 +204,7 @@ class TravelAgent:
 
         # Set up LLM with function calling
         if ChatOpenAI is None:
-            raise ImportError(
-                "langchain-openai is required to run this example"
-            )
+            raise ImportError("langchain-openai is required to run this example")
 
         if available_functions:
             self.llm = ChatOpenAI(model="gpt-4o", temperature=0.7).bind_functions(
@@ -321,7 +320,7 @@ class TravelAgent:
         self, function_call: dict, context_messages: list
     ) -> str:
         """Handle web search function calls."""
-        print("Searching the web...")
+        logger.info("Searching the web")
         try:
             function_args = json.loads(function_call["arguments"])
             query = function_args.get("query", "")
@@ -364,7 +363,7 @@ class TravelAgent:
         function_name = function_call["name"]
         client = await self.get_client()
 
-        print("Accessing memory...")
+        logger.info("Accessing memory")
         result = await client.resolve_tool_call(
             tool_call=function_call,  # Pass the entire function call object
             session_id=session_id,
@@ -458,9 +457,11 @@ class TravelAgent:
         self, session_id: str = "travel_session", user_id: str = DEFAULT_USER
     ):
         """Main async interaction loop for the travel agent."""
-        print("Welcome to the Travel Assistant! (Type 'exit' to quit)")
-        print(f"Session ID: {session_id}, User ID: {user_id}")
-        print()
+        logger.info(
+            "Welcome to the Travel Assistant! (Type 'exit' to quit)",
+            session_id=session_id,
+            user_id=user_id,
+        )
 
         try:
             while True:
@@ -470,17 +471,17 @@ class TravelAgent:
                     continue
 
                 if user_input.lower() in ["exit", "quit"]:
-                    print("Thank you for using the Travel Assistant. Goodbye!")
+                    logger.info("Thank you for using the Travel Assistant. Goodbye!")
                     break
 
                 # Process input and get response
                 response = await self.process_user_input(
                     user_input, session_id, user_id
                 )
-                print(f"\nAssistant: {response}")
+                logger.info("Assistant response", response=response)
 
         except KeyboardInterrupt:
-            print("\nGoodbye!")
+            logger.info("Goodbye!")
         finally:
             await self.cleanup()
 
@@ -509,19 +510,19 @@ def main():
 
     # Check for required API keys
     if not os.getenv("OPENAI_API_KEY"):
-        print("Error: OPENAI_API_KEY environment variable is required")
+        logger.error("OPENAI_API_KEY environment variable is required")
         return
 
     # Check for optional Tavily API key
     if not os.getenv("TAVILY_API_KEY"):
-        print(
-            "Note: TAVILY_API_KEY not set - web search functionality will be disabled"
+        logger.info(
+            "TAVILY_API_KEY not set - web search functionality will be disabled"
         )
-        print("To enable web search, set TAVILY_API_KEY environment variable")
+        logger.info("To enable web search, set TAVILY_API_KEY environment variable")
 
     # Check for Redis connection
     redis_url = args.redis_url if hasattr(args, "redis_url") else REDIS_URL
-    print(f"Using Redis at: {redis_url} for caching (if available)")
+    logger.info("Using Redis for caching", redis_url=redis_url)
 
     # Set memory server URL from argument if provided
     if args.memory_server_url:
@@ -535,7 +536,7 @@ def main():
         agent = TravelAgent()
         agent.run(session_id=args.session_id, user_id=args.user_id)
     except KeyboardInterrupt:
-        print("\nGoodbye!")
+        logger.info("Goodbye!")
     except Exception as e:
         logger.error(f"Error running travel agent: {e}")
         raise

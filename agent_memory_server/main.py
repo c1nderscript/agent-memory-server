@@ -162,9 +162,10 @@ app.include_router(memory_router)
 
 def on_start_logger(port: int):
     """Log startup information"""
-    print("\n-----------------------------------")
-    print(f"🧠 Redis Agent Memory Server running on port: {port}")
-    print("-----------------------------------\n")
+    logger.info(
+        "Redis Agent Memory Server running",
+        port=port,
+    )
 
 
 # Run the application
@@ -178,17 +179,17 @@ if __name__ == "__main__":
             port_index = sys.argv.index("--port") + 1
             if port_index < len(sys.argv):
                 port = int(sys.argv[port_index])
-                print(f"Using port from command line: {port}")
+                logger.info("Using port from command line", port=port)
         except (ValueError, IndexError):
             # If conversion fails or index out of bounds, use default
-            print(f"Invalid port argument, using default: {port}")
+            logger.warning("Invalid port argument, using default", port=port)
     else:
-        print(f"No port argument provided, using default: {port}")
+        logger.info("No port argument provided, using default", port=port)
 
     # Explicitly unset the PORT environment variable if it exists
     if "PORT" in os.environ:
         port_val = os.environ.pop("PORT")
-        print(f"Removed environment variable PORT={port_val}")
+        logger.debug("Removed environment variable PORT", port=port_val)
 
     on_start_logger(port)
     uvicorn.run(

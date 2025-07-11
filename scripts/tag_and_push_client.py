@@ -17,6 +17,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+from agent_memory_server.logging import get_logger
+
+
+logger = get_logger(__name__)
+
 
 def get_client_version() -> str:
     """Read the version from agent-memory-client/__init__.py"""
@@ -38,19 +43,19 @@ def get_client_version() -> str:
 
 def run_command(cmd: list[str], dry_run: bool = False) -> subprocess.CompletedProcess:
     """Run a command, optionally in dry-run mode."""
-    print(f"Running: {' '.join(cmd)}")
+    logger.info("Running command", command=" ".join(cmd))
 
     if dry_run:
-        print("  (dry-run mode - command not executed)")
+        logger.info("Dry run mode - command not executed")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         if result.stdout:
-            print(f"  Output: {result.stdout.strip()}")
+            logger.debug("Command output", output=result.stdout.strip())
         return result
     except subprocess.CalledProcessError as e:
-        print(f"  Error: {e.stderr.strip()}")
+        logger.error("Command failed", error=e.stderr.strip())
         raise
 
 
@@ -61,13 +66,15 @@ def check_git_status():
             ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
         )
         if result.stdout.strip():
-            print("Warning: Git working directory is not clean:")
-            print(result.stdout)
+            logger.warning(
+                "Git working directory is not clean",
+                status=result.stdout.strip(),
+            )
             response = input("Continue anyway? (y/N): ")
             if response.lower() != "y":
                 sys.exit(1)
     except subprocess.CalledProcessError:
-        print("Error: Could not check git status")
+        logger.error("Could not check git status")
         sys.exit(1)
 
 
@@ -114,12 +121,12 @@ def main():
     try:
         original_cwd = Path.cwd()
         if project_root.resolve() != original_cwd.resolve():
-            print(f"Changing to project root: {project_root}")
+            logger.debug("Changing to project root", project_root=str(project_root))
             import os
 
             os.chdir(project_root)
-    except Exception as e:
-        print(f"Warning: Could not change to project root: {e}")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Could not change to project root", error=str(e))
 
     try:
         # Get the current version
@@ -127,9 +134,12 @@ def main():
         tag_suffix = "-test" if args.test else ""
         tag_name = f"client/v{version}{tag_suffix}"
 
-        print(f"Current client version: {version}")
-        print(f"Tag to create: {tag_name}")
-        print(f"Deployment target: {'TestPyPI' if args.test else 'PyPI (Production)'}")
+        logger.info(
+            "Release details",
+            version=version,
+            tag=tag_name,
+            target="TestPyPI" if args.test else "PyPI (Production)",
+        )
 
         if not args.dry_run:
             # Check git status
@@ -138,11 +148,12 @@ def main():
             # Check if tag already exists
             if tag_exists(tag_name):
                 if args.force:
-                    print(f"Tag {tag_name} already exists, but --force specified")
+                    logger.info("Tag already exists but force specified", tag=tag_name)
                     run_command(["git", "tag", "-d", tag_name], args.dry_run)
                 else:
-                    print(
-                        f"Error: Tag {tag_name} already exists. Use --force to overwrite."
+                    logger.error(
+                        "Tag already exists. Use --force to overwrite",
+                        tag=tag_name,
                     )
                     sys.exit(1)
 
@@ -156,17 +167,17 @@ def main():
 
         run_command(push_cmd, args.dry_run)
 
-        print(f"\n✅ Successfully tagged and pushed {tag_name}")
+        logger.info("Tagged and pushed", tag=tag_name)
 
         if not args.dry_run:
-            print("\nThis should trigger the GitHub Actions workflow for:")
+            logger.info("This should trigger the GitHub Actions workflow for")
             if args.test:
-                print("  - TestPyPI publication (testing)")
+                logger.info("  - TestPyPI publication (testing)")
             else:
-                print("  - PyPI publication (production)")
+                logger.info("  - PyPI publication (production)")
 
-    except Exception as e:
-        print(f"Error: {e}")
+    except Exception as e:  # noqa: BLE001
+        logger.error("Tagging script error", error=str(e))
         sys.exit(1)
 
 

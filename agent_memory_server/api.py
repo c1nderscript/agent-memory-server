@@ -453,7 +453,7 @@ async def search_long_term_memory(
     # Extract filter objects from the payload
     filters = payload.get_filters()
 
-    print("Long-term search filters: ", filters)
+    logger.debug("Long-term search filters", filters=filters)
 
     kwargs = {
         "distance_threshold": payload.distance_threshold,
@@ -462,7 +462,7 @@ async def search_long_term_memory(
         **filters,
     }
 
-    print("Kwargs: ", kwargs)
+    logger.debug("Search kwargs", params=kwargs)
 
     kwargs["text"] = payload.text or ""
 
@@ -568,7 +568,7 @@ async def memory_prompt(
     redis = await get_redis_conn()
     _messages = []
 
-    print("Received params: ", params)
+    logger.debug("Received message params", params=params.model_dump())
 
     if params.session:
         # Use token limit for memory prompt, fallback to message count for backward compatibility

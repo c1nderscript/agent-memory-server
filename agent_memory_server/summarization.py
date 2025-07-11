@@ -1,5 +1,4 @@
 import json
-import logging
 
 import tiktoken
 from redis import WatchError
@@ -11,12 +10,13 @@ from agent_memory_server.llms import (
     get_model_client,
     get_model_config,
 )
+from agent_memory_server.logging import get_logger
 from agent_memory_server.models import MemoryMessage
 from agent_memory_server.utils.keys import Keys
 from agent_memory_server.utils.redis import get_redis_conn
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def _incremental_summary(
@@ -132,7 +132,7 @@ async def summarize_session(
         client: The client wrapper (OpenAI or Anthropic)
         redis_conn: Redis connection
     """
-    print("Summarizing session")
+    logger.info("Summarizing session", session_id=session_id)
     redis = await get_redis_conn()
     client = await get_model_client(settings.generation_model)
 
@@ -143,7 +143,9 @@ async def summarize_session(
         await pipe.watch(messages_key, metadata_key)
 
         num_messages = await pipe.llen(messages_key)  # type: ignore
-        print(f"<task> Number of messages: {num_messages}")
+        logger.info(
+            "Number of messages fetched", session_id=session_id, count=num_messages
+        )
         if num_messages < window_size:
             logger.info(f"Not enough messages to summarize for session {session_id}")
             return
@@ -161,7 +163,11 @@ async def summarize_session(
                     msg_dict = json.loads(msg_raw)
                     messages.append(MemoryMessage(**msg_dict))
 
-                print("Messages: ", messages)
+                logger.debug(
+                    "Messages to summarize",
+                    session_id=session_id,
+                    messages=[m.model_dump() for m in messages],
+                )
 
                 model_config = get_model_config(model)
                 max_tokens = model_config.max_tokens
@@ -219,7 +225,12 @@ async def summarize_session(
                 metadata["tokens"] = str(total_tokens)
 
                 pipe.hmset(metadata_key, mapping=metadata)
-                print("Metadata: ", metadata_key, metadata)
+                logger.debug(
+                    "Updated metadata",
+                    session_id=session_id,
+                    metadata_key=metadata_key,
+                    metadata=metadata,
+                )
 
                 # Messages that were summarized
                 num_summarized = len(messages_to_summarize)

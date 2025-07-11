@@ -4,7 +4,6 @@ and LangChain VectorStore implementations, allowing for pluggable backends.
 """
 
 import hashlib
-import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -29,6 +28,7 @@ from agent_memory_server.filters import (
     Topics,
     UserId,
 )
+from agent_memory_server.logging import get_logger
 from agent_memory_server.models import (
     MemoryRecord,
     MemoryRecordResult,
@@ -36,7 +36,7 @@ from agent_memory_server.models import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Type variable for VectorStore implementations
 VectorStoreType = TypeVar("VectorStoreType", bound=VectorStore)
@@ -832,7 +832,7 @@ class RedisVectorStoreAdapter(VectorStoreAdapter):
             score_threshold = 1.0 - distance_threshold
             search_kwargs["score_threshold"] = score_threshold
 
-        print("Search kwargs: ", search_kwargs)
+        logger.debug("Vector search parameters", **search_kwargs)
 
         search_results = (
             await self.vectorstore.asimilarity_search_with_relevance_scores(
@@ -840,7 +840,10 @@ class RedisVectorStoreAdapter(VectorStoreAdapter):
             )
         )
 
-        print("Search results: ", search_results)
+        logger.debug(
+            "Vector search results",
+            results=[(d.page_content, s) for d, s in search_results],
+        )
 
         # Convert results to MemoryRecordResult objects
         memory_results = []

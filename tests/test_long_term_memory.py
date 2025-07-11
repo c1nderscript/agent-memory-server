@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 
 from agent_memory_server.filters import Namespace, SessionId
+from agent_memory_server.logging import get_logger
 from agent_memory_server.long_term_memory import (
     compact_long_term_memories,
     count_long_term_memories,
@@ -25,6 +26,9 @@ from agent_memory_server.models import (
     MemoryRecordResults,
     MemoryTypeEnum,
 )
+
+
+logger = get_logger(__name__)
 
 
 # from agent_memory_server.utils.redis import ensure_search_index_exists  # Not used currently
@@ -952,17 +956,17 @@ class TestLongTermMemoryIntegration:
             )
 
             # If we get here without error, the test environment has proper schema
-            print("SUCCESS: No error occurred - Redis index supports user_id field")
+            logger.info("No error occurred - Redis index supports user_id field")
 
         except Exception as e:
-            print(f"ERROR REPRODUCED: {type(e).__name__}: {e}")
+            logger.info("ERROR REPRODUCED", error=f"{type(e).__name__}: {e}")
 
             # Check if this is the specific error we're trying to reproduce
             if "Unknown argument" in str(e) and "@user_id:" in str(e):
-                print("✅ Successfully reproduced the staging error!")
-                print("The Redis search index doesn't have user_id field indexed")
+                logger.info("Successfully reproduced the staging error!")
+                logger.info("The Redis search index doesn't have user_id field indexed")
             else:
-                print("❌ Different error occurred")
+                logger.info("Different error occurred")
 
             # Re-raise to see the full traceback
             raise
