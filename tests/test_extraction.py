@@ -7,6 +7,7 @@ import tenacity
 import ulid
 
 from agent_memory_server.config import settings
+import agent_memory_server.extraction as extraction_module
 from agent_memory_server.extraction import (
     extract_discrete_memories,
     extract_entities,
@@ -123,6 +124,32 @@ class TestEntityExtraction:
         entities = extract_entities("Test message")
 
         assert entities == []
+
+    @patch("agent_memory_server.extraction.get_ner_model")
+    async def test_extract_entities_cache_hit(self, mock_get_ner_model, mock_ner):
+        """Test that results are cached on repeated calls."""
+        mock_get_ner_model.return_value = mock_ner
+        extraction_module._entity_cache.clear()
+        text = "John works at Google in Mountain View"
+
+        first = extract_entities(text)
+        assert mock_ner.call_count == 1
+
+        second = extract_entities(text)
+        assert mock_ner.call_count == 1
+        assert second == first
+
+    @patch("agent_memory_server.extraction.get_ner_model")
+    async def test_extract_entities_cache_miss(self, mock_get_ner_model, mock_ner):
+        """Test that different text results in a cache miss."""
+        mock_get_ner_model.return_value = mock_ner
+        extraction_module._entity_cache.clear()
+
+        extract_entities("First text")
+        assert mock_ner.call_count == 1
+
+        extract_entities("Second text")
+        assert mock_ner.call_count == 2
 
 
 @pytest.mark.asyncio
