@@ -231,7 +231,6 @@ class AnthropicClientWrapper:
 
         self.client = anthropic.AsyncAnthropic(api_key=anthropic_api_key)
 
-
     async def create_chat_completion(
         self,
         model: str,
@@ -343,7 +342,7 @@ class OpenAIClientWrapper:
                 api_key=openai_api_key,
                 base_url=openai_api_base,
             )
-            
+
         else:
             self.completion_client = None
             self.embedding_client = None
@@ -421,38 +420,29 @@ class OpenAIClientWrapper:
 
 
 # Global LLM client cache
-_model_clients = {}
+_model_clients: dict[ModelProvider, OpenAIClientWrapper | AnthropicClientWrapper] = {}
 
 
-# TODO: This should take a provider as input, not model name, and cache on provider
 async def get_model_client(
-    model_name: str,
+    provider: ModelProvider | str,
 ) -> OpenAIClientWrapper | AnthropicClientWrapper:
-    """Get the appropriate client for a model using the factory.
+    """Get a client for the given provider, caching the instance per provider."""
 
-    This is a module-level function that caches clients for reuse.
-
-    Args:
-        model_name: Name of the model to get a client for
-
-    Returns:
-        An appropriate client wrapper for the model
-    """
     global _model_clients
-    model = None
 
-    if model_name not in _model_clients:
-        model_config = get_model_config(model_name)
+    provider_enum = (
+        provider if isinstance(provider, ModelProvider) else ModelProvider(provider)
+    )
 
-        if model_config.provider == ModelProvider.OPENAI:
-            model = OpenAIClientWrapper(api_key=os.environ.get("OPENAI_API_KEY"))
-        if model_config.provider == ModelProvider.ANTHROPIC:
-            model = AnthropicClientWrapper(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    if provider_enum not in _model_clients:
+        client: OpenAIClientWrapper | AnthropicClientWrapper | None = None
+        if provider_enum == ModelProvider.OPENAI:
+            client = OpenAIClientWrapper(api_key=os.environ.get("OPENAI_API_KEY"))
+        elif provider_enum == ModelProvider.ANTHROPIC:
+            client = AnthropicClientWrapper(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        else:
+            raise ValueError(f"Unsupported model provider: {provider_enum}")
 
-        if model:
-            _model_clients[model_name] = model
-            return model
+        _model_clients[provider_enum] = client
 
-        raise ValueError(f"Unsupported model provider: {model_config.provider}")
-
-    return _model_clients[model_name]
+    return _model_clients[provider_enum]

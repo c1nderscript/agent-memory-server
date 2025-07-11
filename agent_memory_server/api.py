@@ -96,8 +96,8 @@ async def _summarize_working_memory(
         return memory
 
     # Get model client for summarization
-    client = await get_model_client(model)
     model_config = get_model_config(model)
+    client = await get_model_client(model_config.provider)
     summarization_max_tokens = model_config.max_tokens
 
     # Token allocation for summarization (same logic as original summarize_session)

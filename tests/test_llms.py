@@ -125,21 +125,27 @@ def test_get_model_config(model_name, expected_provider, expected_max_tokens):
 
 @pytest.mark.asyncio
 async def test_get_model_client():
-    """Test the get_model_client function"""
-    # Test with OpenAI model
+    """Test the get_model_client function and caching by provider"""
+    # Test with OpenAI provider
     with (
         patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}),
         patch("agent_memory_server.llms.OpenAIClientWrapper") as mock_openai,
     ):
         mock_openai.return_value = "openai-client"
-        client = await get_model_client("gpt-4")
-        assert client == "openai-client"
+        client1 = await get_model_client(ModelProvider.OPENAI)
+        client2 = await get_model_client(ModelProvider.OPENAI)
+        assert client1 == "openai-client"
+        assert client1 is client2
+        mock_openai.assert_called_once()
 
-    # Test with Anthropic model
+    # Test with Anthropic provider
     with (
         patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}),
         patch("agent_memory_server.llms.AnthropicClientWrapper") as mock_anthropic,
     ):
         mock_anthropic.return_value = "anthropic-client"
-        client = await get_model_client("claude-3-sonnet-20240229")
-        assert client == "anthropic-client"
+        client1 = await get_model_client(ModelProvider.ANTHROPIC)
+        client2 = await get_model_client(ModelProvider.ANTHROPIC)
+        assert client1 == "anthropic-client"
+        assert client1 is client2
+        mock_anthropic.assert_called_once()

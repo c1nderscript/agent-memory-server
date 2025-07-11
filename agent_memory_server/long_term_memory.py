@@ -27,6 +27,7 @@ from agent_memory_server.llms import (
     AnthropicClientWrapper,
     OpenAIClientWrapper,
     get_model_client,
+    get_model_config,
 )
 from agent_memory_server.models import (
     MemoryRecord,
@@ -188,9 +189,8 @@ async def merge_memories_with_llm(
     model_name = "gpt-4o-mini"
 
     if not llm_client:
-        model_client: (
-            OpenAIClientWrapper | AnthropicClientWrapper
-        ) = await get_model_client(model_name)
+        provider = get_model_config(model_name).provider
+        model_client = await get_model_client(provider)
     else:
         model_client = llm_client
 
@@ -282,7 +282,8 @@ async def compact_long_term_memories(
         redis_client = await get_redis_conn()
 
     if not llm_client:
-        llm_client = await get_model_client(model_name="gpt-4o-mini")
+        provider = get_model_config("gpt-4o-mini").provider
+        llm_client = await get_model_client(provider)
 
     logger.info(
         f"Starting memory compaction: namespace={namespace}, "
@@ -572,9 +573,8 @@ async def index_long_term_memories(
     if deduplicate:
         # Get Redis client for deduplication operations (still needed for existing dedup logic)
         redis = redis_client or await get_redis_conn()
-        model_client = llm_client or await get_model_client(
-            model_name=settings.generation_model
-        )
+        provider = get_model_config(settings.generation_model).provider
+        model_client = llm_client or await get_model_client(provider)
 
         for memory in memories:
             current_memory = memory
@@ -1140,7 +1140,8 @@ async def deduplicate_by_semantic_search(
         redis_client = await get_redis_conn()
 
     if not llm_client:
-        llm_client = await get_model_client(model_name="gpt-4o-mini")
+        provider = get_model_config("gpt-4o-mini").provider
+        llm_client = await get_model_client(provider)
 
     # Use vector store adapter to find semantically similar memories
     adapter = await get_vectorstore_adapter()
@@ -1357,7 +1358,11 @@ async def extract_memories_from_messages(
     if not message_records:
         return []
 
-    client = llm_client or await get_model_client(settings.generation_model)
+    if llm_client:
+        client = llm_client
+    else:
+        provider = get_model_config(settings.generation_model).provider
+        client = await get_model_client(provider)
     extracted_memories = []
 
     for message_record in message_records:
