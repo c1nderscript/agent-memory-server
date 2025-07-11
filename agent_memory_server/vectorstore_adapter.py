@@ -593,8 +593,6 @@ class LangChainVectorStoreAdapter(VectorStoreAdapter):
         """Count memories in the vector store using LangChain."""
         try:
             # Convert basic filters to our filter objects, then to backend format
-            from agent_memory_server.filters import Namespace, SessionId, UserId
-
             namespace_filter = Namespace(eq=namespace) if namespace else None
             user_id_filter = UserId(eq=user_id) if user_id else None
             session_id_filter = SessionId(eq=session_id) if session_id else None
@@ -941,18 +939,12 @@ class RedisVectorStoreAdapter(VectorStoreAdapter):
             filters = []
 
             if namespace:
-                from agent_memory_server.filters import Namespace
-
                 namespace_filter = Namespace(eq=namespace).to_filter()
                 filters.append(namespace_filter)
             if user_id:
-                from agent_memory_server.filters import UserId
-
                 user_filter = UserId(eq=user_id).to_filter()
                 filters.append(user_filter)
             if session_id:
-                from agent_memory_server.filters import SessionId
-
                 session_filter = SessionId(eq=session_id).to_filter()
                 filters.append(session_filter)
 

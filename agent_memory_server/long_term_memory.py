@@ -430,22 +430,9 @@ async def compact_long_term_memories(
         # Get all memories using the vector store adapter
         try:
             # Convert filters to adapter format
-            namespace_filter = None
-            user_id_filter = None
-            session_id_filter = None
-
-            if namespace:
-                from agent_memory_server.filters import Namespace
-
-                namespace_filter = Namespace(eq=namespace)
-            if user_id:
-                from agent_memory_server.filters import UserId
-
-                user_id_filter = UserId(eq=user_id)
-            if session_id:
-                from agent_memory_server.filters import SessionId
-
-                session_id_filter = SessionId(eq=session_id)
+            namespace_filter = Namespace(eq=namespace) if namespace else None
+            user_id_filter = UserId(eq=user_id) if user_id else None
+            session_id_filter = SessionId(eq=session_id) if session_id else None
 
             # Use vectorstore adapter to get all memories
             adapter = await get_vectorstore_adapter()
@@ -1052,27 +1039,21 @@ async def deduplicate_by_id(
 
     # Use vectorstore adapter to search for memories with the same id
     # Build filter objects
-    namespace_filter = None
-    if namespace or memory.namespace:
-        from agent_memory_server.filters import Namespace
+    namespace_filter = (
+        Namespace(eq=namespace or memory.namespace)
+        if namespace or memory.namespace
+        else None
+    )
 
-        namespace_filter = Namespace(eq=namespace or memory.namespace)
+    user_id_filter = UserId(eq=user_id or memory.user_id) if user_id or memory.user_id else None
 
-    user_id_filter = None
-    if user_id or memory.user_id:
-        from agent_memory_server.filters import UserId
-
-        user_id_filter = UserId(eq=user_id or memory.user_id)
-
-    session_id_filter = None
-    if session_id or memory.session_id:
-        from agent_memory_server.filters import SessionId
-
-        session_id_filter = SessionId(eq=session_id or memory.session_id)
+    session_id_filter = (
+        SessionId(eq=session_id or memory.session_id)
+        if session_id or memory.session_id
+        else None
+    )
 
     # Create id filter
-    from agent_memory_server.filters import Id
-
     id_filter = Id(eq=memory.id)
 
     # Use vectorstore adapter to search for memories with the same id
@@ -1146,23 +1127,21 @@ async def deduplicate_by_semantic_search(
     adapter = await get_vectorstore_adapter()
 
     # Convert filters to adapter format
-    namespace_filter = None
-    user_id_filter = None
-    session_id_filter = None
-
-    # TODO: Refactor to avoid inline imports (fix circular imports)
-    if namespace or memory.namespace:
-        from agent_memory_server.filters import Namespace
-
-        namespace_filter = Namespace(eq=namespace or memory.namespace)
-    if user_id or memory.user_id:
-        from agent_memory_server.filters import UserId
-
-        user_id_filter = UserId(eq=user_id or memory.user_id)
-    if session_id or memory.session_id:
-        from agent_memory_server.filters import SessionId
-
-        session_id_filter = SessionId(eq=session_id or memory.session_id)
+    namespace_filter = (
+        Namespace(eq=namespace or memory.namespace)
+        if namespace or memory.namespace
+        else None
+    )
+    user_id_filter = (
+        UserId(eq=user_id or memory.user_id)
+        if user_id or memory.user_id
+        else None
+    )
+    session_id_filter = (
+        SessionId(eq=session_id or memory.session_id)
+        if session_id or memory.session_id
+        else None
+    )
 
     # Use the vectorstore adapter for semantic search
     # TODO: Paginate through results?
