@@ -14,6 +14,8 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 from langchain_redis.vectorstores import RedisVectorStore
+from redisvl.query import RangeQuery, VectorQuery
+from redisvl.query.filter import FilterExpression
 
 from agent_memory_server.filters import (
     CreatedAt,
@@ -55,6 +57,30 @@ class MemoryRedisVectorStore(RedisVectorStore):
             return max((2 - distance) / 2, 0)
 
         return relevance_score_fn
+
+    def _query_builder(
+        self,
+        embedding: list[float] | bytes,
+        k: int = 10,
+        distance_threshold: Any | None = None,
+        sort_by: str | None = None,
+        filter: str | FilterExpression | None = None,
+        return_fields: list[str] | None = None,
+        *,
+        offset: int = 0,
+    ) -> VectorQuery | RangeQuery:
+        """Extend base query builder with paging support."""
+
+        query = super()._query_builder(
+            embedding=embedding,
+            k=k,
+            distance_threshold=distance_threshold,
+            sort_by=sort_by,
+            filter=filter,
+            return_fields=return_fields,
+        )
+        query.paging(offset, k)
+        return query
 
 
 class LangChainFilterProcessor:
@@ -480,7 +506,7 @@ class LangChainVectorStoreAdapter(VectorStoreAdapter):
             )
 
             # Use LangChain's similarity search with filters
-            search_kwargs = {"k": limit + offset}
+            search_kwargs = {"k": limit, "offset": offset}
             if filter_dict:
                 search_kwargs["filter"] = filter_dict
 
@@ -502,9 +528,6 @@ class LangChainVectorStoreAdapter(VectorStoreAdapter):
                     >= (1.0 - distance_threshold)  # Convert distance to similarity
                 ]
 
-            # Apply offset
-            docs_with_scores = docs_with_scores[offset:]
-
             # Convert to MemoryRecordResult objects
             memory_results = []
             for doc, score in docs_with_scores:
@@ -512,11 +535,11 @@ class LangChainVectorStoreAdapter(VectorStoreAdapter):
                 memory_results.append(memory_result)
 
             # Calculate next offset
-            next_offset = offset + limit if len(docs_with_scores) > limit else None
+            next_offset = offset + limit if len(docs_with_scores) == limit else None
 
             return MemoryRecordResults(
-                memories=memory_results[:limit],  # Limit results after offset
-                total=len(docs_with_scores) + offset,  # Approximate total
+                memories=memory_results,
+                total=len(docs_with_scores) + offset,
                 next_offset=next_offset,
             )
 

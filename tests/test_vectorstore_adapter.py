@@ -593,3 +593,37 @@ class TestVectorStoreAdapter:
             )
 
             assert len(unprocessed_results_after.memories) == 0
+
+
+@pytest.mark.asyncio
+async def test_search_memories_pagination():
+    """Verify adapter returns correct slice when using offset and limit."""
+
+    from typing import Any
+
+    from langchain_core.documents import Document
+
+    class DummyVectorStore:
+        def __init__(self, docs: list[Document]):
+            self.docs = docs
+
+        async def asimilarity_search_with_relevance_scores(
+            self, query: str, k: int = 4, **kwargs: Any
+        ) -> list[tuple[Document, float]]:
+            offset = kwargs.get("offset", 0)
+            subset = self.docs[offset : offset + k]
+            return [(doc, 0.9) for doc in subset]
+
+    docs = []
+    for i in range(5):
+        doc = Document(page_content=f"doc {i}", metadata={})
+        docs.append(doc)
+
+    vectorstore = DummyVectorStore(docs)
+    adapter = RedisVectorStoreAdapter(vectorstore, MagicMock())
+
+    results = await adapter.search_memories(query="q", limit=2, offset=1)
+
+    ids = [m.text for m in results.memories]
+    assert ids == ["doc 1", "doc 2"]
+    assert results.next_offset == 3
