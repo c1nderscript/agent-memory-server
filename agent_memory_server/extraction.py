@@ -1,5 +1,6 @@
 import json
 import os
+import hashlib
 from typing import TYPE_CHECKING, Any
 
 import ulid
@@ -31,6 +32,12 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 _topic_model: "BERTopic | None" = None
 _ner_model: Any | None = None
 _ner_tokenizer: Any | None = None
+_entity_cache: dict[str, list[str]] = {}
+
+
+def _entity_cache_key(text: str) -> str:
+    """Return a stable cache key for the given text."""
+    return hashlib.md5(text.encode()).hexdigest()
 
 
 def get_topic_model() -> "BERTopic":
@@ -68,7 +75,7 @@ def extract_entities(text: str) -> list[str]:
     """
     Extract named entities from text using the NER model.
 
-    TODO: Cache this output.
+    Results are cached in memory using a key derived from the input text.
 
     Args:
         text: The text to extract entities from
@@ -76,6 +83,10 @@ def extract_entities(text: str) -> list[str]:
     Returns:
         List of unique entity names
     """
+    cache_key = _entity_cache_key(text)
+    if cached := _entity_cache.get(cache_key):
+        return cached
+
     try:
         ner = get_ner_model()
         results = ner(text)
@@ -98,7 +109,9 @@ def extract_entities(text: str) -> list[str]:
         if current_entity:
             entities.append("".join(current_entity))
 
-        return list(set(entities))  # Remove duplicates
+        deduped = list(set(entities))
+        _entity_cache[cache_key] = deduped
+        return deduped
 
     except Exception as e:
         logger.error(f"Error extracting entities: {e}")
